@@ -20,24 +20,27 @@ SOPORTADAS = ["add", "sub", "and", "or", "addi", "andi",
 
 @dataclass(frozen=True)
 class InstrDef:
-    formato:str
+    formato: str
+    forma: str
     opcode: int
     funct3: int
-    funct7: int | None=None
+    funct7: int | None = None
 
-DirInstr: dict[str, InstrDef] = {
-    "add":  InstrDef("R", 0b0110011, 0b000, 0b0000000),
-    "sub":  InstrDef("R", 0b0110011, 0b000, 0b0100000),
-    "or":   InstrDef("R", 0b0110011, 0b110, 0b0000000),
-    "and":  InstrDef("R", 0b0110011, 0b111, 0b0000000),
-    "addi": InstrDef("I", 0b0010011, 0b000),
-    "andi": InstrDef("I", 0b0010011, 0b111),
-    "lb":   InstrDef("I", 0b0000011, 0b000),
-    "lw":   InstrDef("I", 0b0000011, 0b010),
-    "sb":   InstrDef("S", 0b0100011, 0b000),
-    "sw":   InstrDef("S", 0b0100011, 0b010),
-    "beq":  InstrDef("B", 0b1100011, 0b000),
-    "bne":  InstrDef("B", 0b1100011, 0b001),
+
+# Fuente: RISC-V ISA Manual Vol. I (Cap. 24) y Harris, Apéndice B, Tabla B.1
+DIRINSTR: dict[str, InstrDef] = {
+    "add":  InstrDef("R", "rd, rs1, rs2",  0b0110011, 0b000, 0b0000000),
+    "sub":  InstrDef("R", "rd, rs1, rs2",  0b0110011, 0b000, 0b0100000),
+    "or":   InstrDef("R", "rd, rs1, rs2",  0b0110011, 0b110, 0b0000000),
+    "and":  InstrDef("R", "rd, rs1, rs2",  0b0110011, 0b111, 0b0000000),
+    "addi": InstrDef("I", "rd, rs1, imm",  0b0010011, 0b000),
+    "andi": InstrDef("I", "rd, rs1, imm",  0b0010011, 0b111),
+    "lb":   InstrDef("I", "rd, imm(rs1)",  0b0000011, 0b000),
+    "lw":   InstrDef("I", "rd, imm(rs1)",  0b0000011, 0b010),
+    "sb":   InstrDef("S", "rs2, imm(rs1)", 0b0100011, 0b000),
+    "sw":   InstrDef("S", "rs2, imm(rs1)", 0b0100011, 0b010),
+    "beq":  InstrDef("B", "rs1, rs2, imm", 0b1100011, 0b000),
+    "bne":  InstrDef("B", "rs1, rs2, imm", 0b1100011, 0b001),
 }
 
 def encode_instruction(instruction: str) -> int:
