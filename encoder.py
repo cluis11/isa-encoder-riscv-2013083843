@@ -13,10 +13,32 @@ propia herramienta desde cero, en el lenguaje que prefiera, siempre que
 respete el mismo contrato (ver especificación, sección "Modo de operación").
 """
 import sys
+from dataclasses import dataclass
 
 SOPORTADAS = ["add", "sub", "and", "or", "addi", "andi",
               "lw", "lb", "sw", "sb", "beq", "bne"]
 
+@dataclass(frozen=True)
+class InstrDef:
+    formato:str
+    opcode: int
+    funct3: int
+    funct7: int | None=None
+
+DirInstr: dict[str, InstrDef] = {
+    "add":  InstrDef("R", 0b0110011, 0b000, 0b0000000),
+    "sub":  InstrDef("R", 0b0110011, 0b000, 0b0100000),
+    "or":   InstrDef("R", 0b0110011, 0b110, 0b0000000),
+    "and":  InstrDef("R", 0b0110011, 0b111, 0b0000000),
+    "addi": InstrDef("I", 0b0010011, 0b000),
+    "andi": InstrDef("I", 0b0010011, 0b111),
+    "lb":   InstrDef("I", 0b0000011, 0b000),
+    "lw":   InstrDef("I", 0b0000011, 0b010),
+    "sb":   InstrDef("S", 0b0100011, 0b000),
+    "sw":   InstrDef("S", 0b0100011, 0b010),
+    "beq":  InstrDef("B", 0b1100011, 0b000),
+    "bne":  InstrDef("B", 0b1100011, 0b001),
+}
 
 def encode_instruction(instruction: str) -> int:
     """
