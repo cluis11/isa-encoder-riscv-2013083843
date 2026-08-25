@@ -128,6 +128,18 @@ def parse_offset(offset: str) -> tuple[int, int]:
     reg = parse_register(reg_str)
     return imm, reg
 
+def encode_r_instruction(instr: InstrDef, operands: str) -> int:
+    return 0  # TODO: implementar
+
+def encode_i_instruction(instr: InstrDef, operands: str) -> int:
+    return 0  # TODO: implementar
+
+def encode_s_instruction(instr: InstrDef, operands: str) -> int:
+    return 0  # TODO: implementar
+
+def encode_b_instruction(instr: InstrDef, operands: str) -> int:
+    return 0  # TODO: implementar
+
 def encode_instruction(instruction: str) -> int:
     """
     Recibe una instrucción como texto, p. ej. "add x5, x6, x7", y debe
@@ -138,9 +150,6 @@ def encode_instruction(instruction: str) -> int:
     investigarse en el manual oficial de la ISA RISC-V (ver referencia en
     la especificación) y documentarse en el README.
     """
-    # TODO: implementar. Sugerencia: parsear el mnemónico y los operandos,
-    # despachar según el formato (R/I/S/B), y ensamblar los campos con
-    # operaciones de bits.
 
     instruction = instruction.strip()
     #Valida si el string de instruccion esta vacio
@@ -159,11 +168,19 @@ def encode_instruction(instruction: str) -> int:
     if len(instr) < 2:
             raise ValueError(f"Faltan operandos para: {instrHead}")
     instrBody = instr[1].strip()
+    instrHead = DIRINSTR[instrHead]
 
+    if instrHead.formato == "R":
+        return encode_r_instruction(instrHead, instrBody)
+    elif instrHead.formato == "I":
+        return encode_i_instruction(instrHead, instrBody)
+    elif instrHead.formato == "S":
+        return encode_s_instruction(instrHead, instrBody)
+    elif instrHead.formato == "B":
+        return encode_b_instruction(instrHead, instrBody)
+    else:
+        raise ValueError(f"Formato desconocido para la instrucción: {instrHead}")
 
-    
-
-    raise NotImplementedError("encode_instruction: pendiente de implementar")
 
 
 def explain_instruction(instruction: str, word: int) -> str:
