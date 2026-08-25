@@ -18,6 +18,7 @@ from dataclasses import dataclass
 SOPORTADAS = ["add", "sub", "and", "or", "addi", "andi",
               "lw", "lb", "sw", "sb", "beq", "bne"]
 
+#Definicio de clase para representar el formato de la instruccion
 @dataclass(frozen=True)
 class InstrDef:
     formato: str
@@ -26,8 +27,8 @@ class InstrDef:
     funct3: int
     funct7: int | None = None
 
-
-# Fuente: RISC-V ISA Manual Vol. I (Cap. 24) y Harris, Apéndice B, Tabla B.1
+#Fuente: RISC-V ISA Manual Vol. I (Cap. 24) y Harris, Apéndice B, Tabla B.1
+#Diccionario que contiene para cada instruccion su tipo, los atributos esperados, y los valores en binario de opcode, fucnt3 y funct7 para donde aplique
 DIRINSTR: dict[str, InstrDef] = {
     "add":  InstrDef("R", "rd, rs1, rs2",  0b0110011, 0b000, 0b0000000),
     "sub":  InstrDef("R", "rd, rs1, rs2",  0b0110011, 0b000, 0b0100000),
@@ -41,6 +42,50 @@ DIRINSTR: dict[str, InstrDef] = {
     "sw":   InstrDef("S", "rs2, imm(rs1)", 0b0100011, 0b010),
     "beq":  InstrDef("B", "rs1, rs2, imm", 0b1100011, 0b000),
     "bne":  InstrDef("B", "rs1, rs2, imm", 0b1100011, 0b001),
+}
+
+#Definicio de clase representar un elemento de la instruccion en binario
+@dataclass(frozen=True)
+class Campo:
+    nombre: str
+    posInstr: int
+    ancho: int
+    bitOrigen: int = 0
+
+LAYOUTS: dict[str, list[Campo]] = {
+    "R": [
+        Campo("funct7", 25, 7),
+        Campo("rs2", 20, 5),
+        Campo("rs1", 15, 5),
+        Campo("funct3", 12, 3),
+        Campo("rd", 7, 5),
+        Campo("opcode", 0, 7)
+    ],
+    "I": [
+        Campo("imm[11:0]", 20, 12, 0),
+        Campo("rs1", 15, 5),
+        Campo("funct3", 12, 3),
+        Campo("rd", 7, 5),
+        Campo("opcode", 0, 7)    
+    ],
+    "S": [
+        Campo("imm[11:5]", 25, 7, 5),
+        Campo("rs2", 20, 5),
+        Campo("rs1", 15, 5),
+        Campo("funct3", 12, 3),
+        Campo("imm[4:0]", 7, 5, 0),
+        Campo("opcode", 0, 7)
+    ],
+    "B": [
+        Campo("imm[12]", 31, 1, 12),
+        Campo("imm[10:5]", 25, 6, 5),
+        Campo("rs2", 20, 5),
+        Campo("rs1", 15, 5),
+        Campo("funct3", 12, 3),
+        Campo("imm[4:1]", 8, 4, 1),
+        Campo("imm[11]", 7, 1, 11),
+        Campo("opcode", 0, 7)
+    ]
 }
 
 def encode_instruction(instruction: str) -> int:
