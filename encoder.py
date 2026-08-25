@@ -88,6 +88,46 @@ LAYOUTS: dict[str, list[Campo]] = {
     ]
 }
 
+def parse_register(reg: str) -> int:
+    """
+    Recibe un registro como texto, p. ej. "x5", y retorna su número como
+    entero (0 <= valor < 32). Debe validar que el registro sea válido.
+    """
+    if not reg.startswith("x"):
+        raise ValueError(f"Registro inválido: {reg}")
+    try:
+        reg_num = int(reg[1:])
+    except ValueError:
+        raise ValueError(f"Registro inválido: {reg}")
+    if not (0 <= reg_num < 32):
+        raise ValueError(f"Registro fuera de rango: {reg}")
+    return reg_num
+
+def parse_immediate(imm: str) -> int:
+    """
+    Recibe un inmediato como texto, p. ej. "42" o "-1", y retorna su valor
+    como entero (puede ser negativo). Debe validar que el inmediato sea
+    un número entero válido.
+    """
+    try:
+        return int(imm)
+    except ValueError:
+        raise ValueError(f"Inmediato inválido: {imm}")
+
+def parse_offset(offset: str) -> tuple[int, int]:
+    """
+    Recibe un offset como texto, p. ej. "8(x5)", y retorna una tupla con
+    el inmediato y el registro base como enteros (inmediato, registro).
+    Debe validar que el offset sea válido.
+    """
+    if "(" not in offset or not offset.endswith(")"):
+        raise ValueError(f"Offset inválido: {offset}")
+    imm_str, reg_str = offset.split("(")
+    reg_str = reg_str[:-1]  # Remove the closing parenthesis
+    imm = parse_immediate(imm_str)
+    reg = parse_register(reg_str)
+    return imm, reg
+
 def encode_instruction(instruction: str) -> int:
     """
     Recibe una instrucción como texto, p. ej. "add x5, x6, x7", y debe
@@ -101,6 +141,28 @@ def encode_instruction(instruction: str) -> int:
     # TODO: implementar. Sugerencia: parsear el mnemónico y los operandos,
     # despachar según el formato (R/I/S/B), y ensamblar los campos con
     # operaciones de bits.
+
+    instruction = instruction.strip()
+    #Valida si el string de instruccion esta vacio
+    if not instruction:
+        raise ValueError("La instrucción no puede estar vacía")
+
+    #Separa el mnemónico de los operandos
+    instr=instruction.split(" ",1)
+
+    #valida si el mnemónico de la instrucción es soportado
+    instrHead = instr[0].strip()
+    if instrHead not in DIRINSTR:
+        raise ValueError(f"Instrucción no soportada: {instrHead}. Soportadas: {', '.join(DIRINSTR)}")
+
+    #Valida si hay operandos para la instrucción
+    if len(instr) < 2:
+            raise ValueError(f"Faltan operandos para: {instrHead}")
+    instrBody = instr[1].strip()
+
+
+    
+
     raise NotImplementedError("encode_instruction: pendiente de implementar")
 
 
