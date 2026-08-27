@@ -129,7 +129,17 @@ def parse_offset(offset: str) -> tuple[int, int]:
     return imm, reg
 
 def encode_r_instruction(instr: InstrDef, operands: str) -> int:
-    return 0  # TODO: implementar
+    listOperands = operands.split(",")
+    if len(listOperands) != 3:
+        raise ValueError(f"R-type instruction requires 3 operands, got {len(listOperands)}")
+    rd = parse_register(listOperands[0].strip())
+    rs1 = parse_register(listOperands[1].strip())
+    rs2 = parse_register(listOperands[2].strip())
+    opcode = instr.opcode
+    funct3 = instr.funct3
+    funct7 = instr.funct7 if instr.funct7 is not None else 0
+    word = (funct7 << 25) | (rs2 << 20) | (rs1 << 15) | (funct3 << 12) | (rd << 7) | opcode
+    return word
 
 def encode_i_instruction(instr: InstrDef, operands: str) -> int:
     return 0  # TODO: implementar
@@ -168,16 +178,16 @@ def encode_instruction(instruction: str) -> int:
     if len(instr) < 2:
             raise ValueError(f"Faltan operandos para: {instrHead}")
     instrBody = instr[1].strip()
-    instrHead = DIRINSTR[instrHead]
+    instrDir = DIRINSTR[instrHead]
 
-    if instrHead.formato == "R":
-        return encode_r_instruction(instrHead, instrBody)
-    elif instrHead.formato == "I":
-        return encode_i_instruction(instrHead, instrBody)
-    elif instrHead.formato == "S":
-        return encode_s_instruction(instrHead, instrBody)
-    elif instrHead.formato == "B":
-        return encode_b_instruction(instrHead, instrBody)
+    if instrDir.formato == "R":
+        return encode_r_instruction(instrDir, instrBody)
+    elif instrDir.formato == "I":
+        return encode_i_instruction(instrDir, instrBody)
+    elif instrDir.formato == "S":
+        return encode_s_instruction(instrDir, instrBody)
+    elif instrDir.formato == "B":
+        return encode_b_instruction(instrDir, instrBody)
     else:
         raise ValueError(f"Formato desconocido para la instrucción: {instrHead}")
 
@@ -192,8 +202,7 @@ def explain_instruction(instruction: str, word: int) -> str:
     El formato visual (colores, tabla, arte ASCII, etc.) queda a su
     criterio, siempre que sea claro.
     """
-    # TODO: implementar.
-    raise NotImplementedError("explain_instruction: pendiente de implementar")
+    return "[explicación pendiente de implementar]"
 
 
 def main():
