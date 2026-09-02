@@ -1,0 +1,45 @@
+# R — registros normales, x0, extremos
+add x5, x6, x7
+add x5, x0, x7
+add x31, x31, x31
+sub x10, x11, x12
+sub x10, x0, x12
+sub x31, x31, x31
+and x1, x2, x3
+and x1, x0, x3
+and x31, x31, x31
+or x8, x9, x10
+or x8, x0, x10
+or x31, x31, x31
+
+# I aritmético — positivo, negativo, límite
+addi x5, x6, 100
+addi x5, x6, -100
+addi x5, x6, 2047
+andi x7, x8, 255
+andi x7, x8, -256
+andi x7, x8, -2048
+
+# I carga
+lw x5, 8(x6)
+lw x5, -8(x6)
+lw x5, 2047(x0)
+lb x9, 16(x10)
+lb x9, -16(x10)
+lb x9, -2048(x0)
+
+# S almacenamiento
+sw x5, 8(x6)
+sw x5, -4(x2)
+sw x5, -2048(x6)
+sb x11, 12(x13)
+sb x11, -12(x13)
+sb x11, 2047(x0)
+
+# B saltos
+beq x1, x2, 8
+beq x1, x2, -80
+beq x1, x2, 0
+bne x3, x4, 16
+bne x3, x4, -16
+bne x3, x0, 4094
