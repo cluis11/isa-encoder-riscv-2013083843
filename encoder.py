@@ -258,9 +258,26 @@ def explain_instruction(instruction: str, word: int) -> str:
         valor = (word >> campo.posInstr) & ((1 << campo.ancho) - 1)
         binario = f"{valor:0{campo.ancho}b}"
         partes.append(binario)
+
+        decimal = valor #para el imm de operaciones I
+        if formato == "I" and campo.nombre.startswith("imm"):
+            if valor & (1 << (campo.ancho - 1)):
+                decimal -= (1 << campo.ancho)
         alto = campo.posInstr + campo.ancho - 1
         rango = f"{alto}-{campo.posInstr}" if campo.ancho > 1 else f"{alto}"
-        output.append(f"{campo.nombre:<10} {rango:<7} {binario:<13} {valor:>6}  {campo.desc}")
+        output.append(f"{campo.nombre:<10} {rango:<7} {binario:<13} {decimal:>6}  {campo.desc}")
+
+    if formato in ("S", "B"):
+        bits = 13 if formato == "B" else 12
+        imm_total = 0
+        for campo in LAYOUTS[formato]:
+            if campo.nombre.startswith("imm"):
+                valor = (word >> campo.posInstr) & ((1 << campo.ancho) - 1)
+                imm_total |= (valor << campo.bitOrigen)
+        if imm_total & (1 << (bits - 1)):
+            imm_total -= (1 << bits)
+        binario_imm = f"{imm_total & ((1 << bits) - 1):0{bits}b}"
+        output.append(f"{'imm total':<10} {'-':<7} {binario_imm:<13} {imm_total:>6}  Inmediato completo con signo")
 
     output.append("")
     output.append(" ".join(partes))
