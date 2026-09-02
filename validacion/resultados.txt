@@ -1,0 +1,39 @@
+INSTRUCCION                MODELO       OBJDUMP      RESULTADO
+----------------------------------------------------------------------
+add x5, x6, x7             0x007302b3   0x007302b3   OK
+add x5, x0, x7             0x007002b3   0x007002b3   OK
+add x31, x31, x31          0x01ff8fb3   0x01ff8fb3   OK
+sub x10, x11, x12          0x40c58533   0x40c58533   OK
+sub x10, x0, x12           0x40c00533   0x40c00533   OK
+sub x31, x31, x31          0x41ff8fb3   0x41ff8fb3   OK
+and x1, x2, x3             0x003170b3   0x003170b3   OK
+and x1, x0, x3             0x003070b3   0x003070b3   OK
+and x31, x31, x31          0x01ffffb3   0x01ffffb3   OK
+or x8, x9, x10             0x00a4e433   0x00a4e433   OK
+or x8, x0, x10             0x00a06433   0x00a06433   OK
+or x31, x31, x31           0x01ffefb3   0x01ffefb3   OK
+addi x5, x6, 100           0x06430293   0x06430293   OK
+addi x5, x6, -100          0xf9c30293   0xf9c30293   OK
+addi x5, x6, 2047          0x7ff30293   0x7ff30293   OK
+andi x7, x8, 255           0x0ff47393   0x0ff47393   OK
+andi x7, x8, -256          0xf0047393   0xf0047393   OK
+andi x7, x8, -2048         0x80047393   0x80047393   OK
+lw x5, 8(x6)               0x00832283   0x00832283   OK
+lw x5, -8(x6)              0xff832283   0xff832283   OK
+lw x5, 2047(x0)            0x7ff02283   0x7ff02283   OK
+lb x9, 16(x10)             0x01050483   0x01050483   OK
+lb x9, -16(x10)            0xff050483   0xff050483   OK
+lb x9, -2048(x0)           0x80000483   0x80000483   OK
+sw x5, 8(x6)               0x00532423   0x00532423   OK
+sw x5, -4(x2)              0xfe512e23   0xfe512e23   OK
+sw x5, -2048(x6)           0x80532023   0x80532023   OK
+sb x11, 12(x13)            0x00b68623   0x00b68623   OK
+sb x11, -12(x13)           0xfeb68a23   0xfeb68a23   OK
+sb x11, 2047(x0)           0x7eb00fa3   0x7eb00fa3   OK
+beq x1, x2, 8              0x00208463   0x00208463   OK
+beq x1, x2, -80            0xfa2088e3   0xfa2088e3   OK
+beq x1, x2, 0              0x00208063   0x00208063   OK
+bne x3, x4, 16             0x00419863   0x00419863   OK
+bne x3, x4, -16            0xfe4198e3   0xfe4198e3   OK
+
+Total: 35 correctos, 0 fallidos
