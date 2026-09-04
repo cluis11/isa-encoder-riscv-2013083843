@@ -1,16 +1,40 @@
 #!/usr/bin/env python3
 """
-Esqueleto del Codificador Educativo de Instrucciones RISC-V.
-CE4301 Arquitectura de Computadores I — Proyecto Individual — 2026-II
+Codificador Educativo de Instrucciones RISC-V (subconjunto RV32I).
+CE4301 Arquitectura de Computadores I - Proyecto Individual - 2026-II
 
-Este esqueleto ya implementa el contrato de línea de comandos y de salida
-requerido por la especificación. Usted debe completar las dos funciones
-marcadas con TODO; puede modificar el resto del archivo si lo necesita,
-siempre que se preserve el contrato de invocación y la línea "HEX: 0x...".
+Traduce una unica instruccion en ensamblador a su codificacion binaria de
+32 bits y muestra el desglose de cada campo del formato correspondiente
+(R, I, S o B).
 
-No es obligatorio usar este esqueleto ni Python: puede implementar su
-propia herramienta desde cero, en el lenguaje que prefiera, siempre que
-respete el mismo contrato (ver especificación, sección "Modo de operación").
+Arquitectura
+------------
+El diseno separa el dato (la especificacion de la ISA) del algoritmo (el
+parseo y el ensamblado). Toda la variabilidad entre instrucciones vive en
+dos tablas:
+
+  DIRINSTR : mnemonico -> InstrDef. Formato, sintaxis de operandos y los
+             valores fijos de opcode / funct3 / funct7.
+  LAYOUTS  : formato -> lista de Campo. Que campos tiene cada formato, en
+             que bits va cada uno, y de que bit del valor de origen se
+             toma (necesario para los inmediatos partidos de S y B).
+
+Flujo:  texto -> encode_instruction (valida y despacha por formato)
+              -> encode_X_instruction (parsea y ensambla)
+              -> int de 32 bits
+
+explain_instruction recorre el camino inverso: extrae cada campo desde la
+palabra ya codificada, leyendo la misma tabla LAYOUTS.
+
+Fuentes de los campos de codificacion
+-------------------------------------
+[1] Waterman, Asanovic. "The RISC-V Instruction Set Manual, Volume I:
+    Unprivileged ISA". Cap. 2 (formatos) y Cap. 24 (tablas de opcodes).
+[2] Harris & Harris. "Digital Design and Computer Architecture, RISC-V
+    Edition". Apendice B, Tabla B.1 y Figura B.1.
+
+Contrato: se invoca como ./run.sh "<instruccion>" y la salida incluye una
+linea literal HEX: 0x........ requerida para la verificacion automatica.
 """
 import sys
 from dataclasses import dataclass
@@ -21,10 +45,10 @@ SOPORTADAS = ["add", "sub", "and", "or", "addi", "andi",
 #Definicio de clase para representar el formato de la instruccion
 @dataclass(frozen=True)
 class InstrDef:
-    formato: str
-    forma: str
-    opcode: int
-    funct3: int
+    formato: str #Define el formato I,R,S,B
+    forma: str #Formato de la instruccion, p. ej. "rd, rs1, rs2"
+    opcode: int 
+    funct3: int 
     funct7: int | None = None
 
 #Fuente: RISC-V ISA Manual Vol. I (Cap. 24) y Harris, Apéndice B, Tabla B.1
@@ -47,12 +71,14 @@ DIRINSTR: dict[str, InstrDef] = {
 #Definicio de clase representar un elemento de la instruccion en binario
 @dataclass(frozen=True)
 class Campo:
-    nombre: str
-    posInstr: int
-    ancho: int
-    bitOrigen: int = 0
-    desc: str = ""
+    nombre: str #nombre del elemento de la instruccion
+    posInstr: int #Posicion inicial del elemento en la instruccion
+    ancho: int #largo en bits del elemento
+    bitOrigen: int = 0 #Indica el numero de bit donde inicia
+    desc: str = "" #Descripcion del elemento de la instruccion
 
+
+#Diccionario para explicar la instruccion
 LAYOUTS: dict[str, list[Campo]] = {
     "R": [
         Campo("funct7", 25, 7, 0, "Distingue operaciones con igual opcode y funct3"),
@@ -89,6 +115,7 @@ LAYOUTS: dict[str, list[Campo]] = {
     ],
 }
 
+#Funcion que valida y parsea un registro de texto a su valor numerico
 def parse_register(reg: str) -> int:
     """
     Recibe un registro como texto, p. ej. "x5", y retorna su número como
@@ -104,6 +131,7 @@ def parse_register(reg: str) -> int:
         raise ValueError(f"Registro fuera de rango: {reg}")
     return reg_num
 
+#funcion que valida y parsea un inmediato de texto a su valor numerico
 def parse_immediate(imm: str) -> int:
     """
     Recibe un inmediato como texto, p. ej. "42" o "-1", y retorna su valor
@@ -115,6 +143,7 @@ def parse_immediate(imm: str) -> int:
     except ValueError:
         raise ValueError(f"Inmediato inválido: {imm}")
 
+#funcion que valida y parsea un offset de texto a su valor numerico
 def parse_offset(offset: str) -> tuple[int, int]:
     """
     Recibe un offset como texto, p. ej. "8(x5)", y retorna una tupla con
@@ -130,6 +159,11 @@ def parse_offset(offset: str) -> tuple[int, int]:
     return imm, reg
 
 def encode_r_instruction(instr: InstrDef, operands: str) -> int:
+    """Codifica el formato R: rd, rs1, rs2.
+
+    Tres registros, sin inmediato. funct3 y funct7 juntos distinguen las
+    operaciones que comparten opcode; add y sub solo difieren en funct7.
+    """
     listOperands = operands.split(",")
     if len(listOperands) != 3:
         raise ValueError(f"R-type instruction requires 3 operands, got {len(listOperands)}")
@@ -144,6 +178,17 @@ def encode_r_instruction(instr: InstrDef, operands: str) -> int:
     return word
 
 def encode_i_instruction(instr: InstrDef, operands: str) -> int:
+    """Codifica el formato I, en sus dos sintaxis:
+
+        rd, rs1, imm    aritmetica con inmediato (addi, andi)  -> 3 tokens
+        rd, imm(rs1)    carga desde memoria (lw, lb)           -> 2 tokens
+
+    Ambas comparten layout: el inmediato ocupa los bits 31:20 completo y
+    contiguo. Se enmascara a 12 bits antes de colocarlo porque en Python
+    los enteros no tienen ancho fijo, y un negativo arrastraria unos
+    infinitos que contaminarian los demas campos al hacer OR. Ese
+    enmascarado es el paso de complemento a dos.
+    """
     listOperands = operands.split(",")
     if len(listOperands) == 3:
         rd = parse_register(listOperands[0].strip())
@@ -165,6 +210,13 @@ def encode_i_instruction(instr: InstrDef, operands: str) -> int:
     raise ValueError(f"I-type instruction requires 2 or 3 operands, got {len(listOperands)}")
 
 def encode_s_instruction(instr: InstrDef, operands: str) -> int:
+    """Codifica el formato S: rs2, imm(rs1).
+
+    Sin registro destino: rs2 aporta el dato a escribir y rs1 es la base
+    de la direccion. El inmediato de 12 bits se parte en dos trozos
+    contiguos, imm[11:5] e imm[4:0], porque los campos de registro
+    conservan su posicion y no dejan espacio contiguo suficiente.
+    """
     listOperands = operands.split(",")
     if len(listOperands) != 2:
         raise ValueError(f"S-type instruction requires 2 operands, got {len(listOperands)}")
@@ -178,6 +230,18 @@ def encode_s_instruction(instr: InstrDef, operands: str) -> int:
     return word
 
 def encode_b_instruction(instr: InstrDef, operands: str) -> int:
+    """Codifica el formato B: rs1, rs2, imm.
+
+    Ambos registros son fuentes (se comparan) y el inmediato es el
+    desplazamiento del salto en bytes, ya resuelto numericamente.
+
+    El offset abarca 13 bits con signo pero solo se codifican 12: el bit 0
+    es implicito y siempre cero, porque los destinos estan alineados a 2
+    bytes. Los cuatro trozos van a posiciones no contiguas y reordenadas
+    (bit swizzling): imm[12] al bit 31 e imm[11] al bit 7, de modo que el
+    bit de signo quede siempre en el bit 31 y el resto coincida en
+    posicion con el formato S.
+    """
     listOperands = operands.split(",")
     if len(listOperands) != 3:
         raise ValueError(f"B-type instruction requires 3 operands, got {len(listOperands)}")
